@@ -12,12 +12,12 @@ def is_first_load():
     return False
 
 def get_api_key():
-    if "api_key" not in st.session_state:
-        if "google_api_key" in st.secrets:
-            st.session_state["api_key"] = st.secrets.google_api_key
+    if "GOOGLE_API_KEY" not in st.session_state:
+        if "GOOGLE_API_KEY" in st.secrets:
+            st.session_state["GOOGLE_API_KEY"] = st.secrets.google_api_key
         else:
-            st.session_state["api_key"] = st.sidebar.text_input("Google API Key", type="password")
-    if not st.session_state["api_key"]:
+            st.session_state["GOOGLE_API_KEY"] = st.sidebar.text_input("Google API Key", type="password")
+    if not st.session_state["GOOGLE_API_KEY"]:
         st.info("Enter a Google API Key to continue")
         st.stop()
 
