@@ -1,5 +1,3 @@
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
 from utils.StreamHandler import StreamHandler
 from pathlib import Path
 import json

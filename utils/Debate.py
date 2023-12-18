@@ -1,5 +1,6 @@
 from langchain.schema import ChatMessage
 from langchain.chat_models import ChatOpenAI
+from langchain.chat_models import ChatVertexAI
 from typing import List, Dict, Optional, Any
 from utils.Coordinator import Coordinator
 from utils.Expert import Expert
@@ -7,8 +8,8 @@ from utils.Expert import Expert
 
 
 class Debate():
-    def __init__(self, openai_api_key: str, model_name: str = "gpt-3.5-turbo") -> None:
-        self.openai_api_key = openai_api_key
+    def __init__(self, api_key: str, model_name: str = "gemini-pro") -> None:
+        self.api_key = api_key
         self.model_name = model_name
         self.topic = None
         self.debate_history = []
@@ -38,14 +39,16 @@ class Debate():
         self.experts = self.generate_experts(expert_instructions)
 
     def create_expert_instructions(self, num_experts: int, stance: str) -> List[Dict[str, str]]:
-        coordinator_model = ChatOpenAI(openai_api_key=self.openai_api_key, model_name=self.model_name)
+        #coordinator_model = ChatOpenAI(openai_api_key=self.api_key, model_name=self.model_name)
+        coordinator_model = ChatVertexAI(model_name=self.model_name, streaming=True)
         coordinator = Coordinator(coordinator_model, num_experts, self.topic, stance)
         return coordinator.generate_expert_instructions()
 
     def generate_experts(self, experts_instructions: List[Dict[str, str]]) -> List[Expert]:
         experts = []
         for expert_instruction in experts_instructions:
-            expert_model = ChatOpenAI(openai_api_key=self.openai_api_key, model_name=self.model_name, streaming=True)
+            #expert_model = ChatOpenAI(openai_api_key=self.api_key, model_name=self.model_name, streaming=True)
+            expert_model = ChatVertexAI(model_name=self.model_name, streaming=True)
             experts.append(Expert(expert_model, expert_instruction))
         return experts
     

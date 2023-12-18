@@ -11,19 +11,19 @@ def is_first_load():
         return True
     return False
 
-def get_openai_api_key():
-    if "openai_api_key" not in st.session_state:
-        if "openai_api_key" in st.secrets:
-            st.session_state["openai_api_key"] = st.secrets.openai_api_key
+def get_api_key():
+    if "api_key" not in st.session_state:
+        if "google_api_key" in st.secrets:
+            st.session_state["api_key"] = st.secrets.google_api_key
         else:
-            st.session_state["openai_api_key"] = st.sidebar.text_input("OpenAI API Key", type="password")
-    if not st.session_state["openai_api_key"]:
-        st.info("Enter an OpenAI API Key to continue")
+            st.session_state["api_key"] = st.sidebar.text_input("Google API Key", type="password")
+    if not st.session_state["api_key"]:
+        st.info("Enter a Google API Key to continue")
         st.stop()
 
 def initialize_debate(start_new=True, debate_history=None, expert_instructions=None):
-    get_openai_api_key()
-    st.session_state["debate"] = Debate(openai_api_key=st.session_state["openai_api_key"], model_name="gpt-3.5-turbo")
+    get_api_key()
+    st.session_state["debate"] = Debate(api_key=st.session_state["api_key"], model_name="gemini-pro")
     st.session_state["initialized"] = True
     st.session_state["experts"] = []
 
