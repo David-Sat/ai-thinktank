@@ -5,6 +5,9 @@ import json
 from utils.StreamHandler import StreamHandler
 from utils.Debate import Debate
 
+
+
+
 def is_first_load():
     if "first_load_done" not in st.session_state:
         st.session_state["first_load_done"] = True
@@ -23,7 +26,7 @@ def get_api_key():
 
 def initialize_debate(start_new=True, debate_history=None, expert_instructions=None):
     get_api_key()
-    st.session_state["debate"] = Debate(api_key=st.session_state["api_key"], model_name="gemini-pro")
+    st.session_state["debate"] = Debate(api_key=st.session_state["GOOGLE_API_KEY"], model_name="gemini-pro")
     st.session_state["initialized"] = True
     st.session_state["experts"] = []
 
@@ -53,8 +56,10 @@ def conduct_debate_round():
     for expert in st.session_state["experts"]:
         try:
             with chat.chat_message(name=expert.expert_instruction["role"], avatar=expert.expert_instruction["avatar"]):
-                response = expert.generate_argument(st.session_state.debate, StreamHandler(st.empty()))
-                st.session_state.debate.add_message(role=expert.expert_instruction["role"], avatar=expert.expert_instruction["avatar"], content=response)
+                stream_handler = StreamHandler(st.empty())
+                expert.generate_argument(st.session_state.debate, stream_handler)
+                final_response = stream_handler.get_accumulated_response()
+                st.session_state.debate.add_message(role=expert.expert_instruction["role"], avatar=expert.expert_instruction["avatar"], content=final_response)
         except Exception:
             with chat.chat_message(name=expert.expert_instruction["role"], avatar=default_avatar):
                 response = expert.generate_argument(st.session_state.debate, StreamHandler(st.empty()))

@@ -1,7 +1,5 @@
 from langchain.callbacks.base import BaseCallbackHandler
 
-
-
 class StreamHandler(BaseCallbackHandler):
     def __init__(self, container, initial_text=""):
         self.container = container
@@ -10,3 +8,6 @@ class StreamHandler(BaseCallbackHandler):
     def on_llm_new_token(self, token: str, **kwargs) -> None:
         self.text += token
         self.container.markdown(self.text)
+
+    def get_accumulated_response(self):
+        return self.text

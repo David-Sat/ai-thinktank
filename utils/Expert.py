@@ -1,8 +1,5 @@
-from operator import itemgetter
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema import StrOutputParser, ChatMessage
-
 from typing import Dict, Any, Callable
+from langchain.schema.messages import HumanMessage, AIMessage
 from utils.Worker import Worker
 
 class Expert(Worker):
@@ -12,27 +9,34 @@ class Expert(Worker):
         self.system_prompts = self.config["expert"]['system_prompts']
         self.examples = self.config["expert"]['examples']
     
-    
     def generate_argument(self, debate: Any, stream_handler: Callable) -> str:
         system_prompt = self.system_prompts["system1"].replace("##debate_topic##", debate.topic)
         system_prompt += "\n" + self.expert_instruction["instructions"]
 
-        messages = [ChatMessage(role="system", content=system_prompt)]
+        messages = [HumanMessage(content=system_prompt)]
 
-        if len(debate.memory) > 0:
-            messages.extend(debate.memory)
-            reminder = f"Shortly engage with your adversaries as the {self.expert_instruction['role']}."
-            messages.append(ChatMessage(role="system", content=reminder))
+        last_role = "user"
+        for m in debate.memory:
+            if m.role == "assistant":
+                if last_role == "assistant":
+                    # Insert a user message to maintain alternation
+                    interjection = "What are your thoughts on this?"
+                    messages.append(HumanMessage(content=interjection))
+                messages.append(AIMessage(content=m.content))
+                last_role = "assistant"
+            else:
+                messages.append(HumanMessage(content=m.content))
+                last_role = "user"
 
-        debate_prompt = ChatPromptTemplate.from_messages(messages)
+        if last_role == "assistant":
+            final_user_input = "What are your thoughts on this?"
+            messages.append(HumanMessage(content=final_user_input))
 
-        chain = (
-            debate_prompt
-            | self.model
-            | StrOutputParser()
-        )
 
         config = {
             "callbacks": [stream_handler]
         }
-        return chain.invoke(input={}, config=config)
+
+        for chunk in self.model.stream(messages, config=config):
+            pass
+        

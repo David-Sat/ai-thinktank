@@ -1,9 +1,8 @@
 from langchain.schema import ChatMessage
-from langchain.chat_models import ChatOpenAI
-from langchain.chat_models import ChatVertexAI
 from typing import List, Dict, Optional, Any
 from utils.Coordinator import Coordinator
 from utils.Expert import Expert
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 
 
@@ -39,16 +38,14 @@ class Debate():
         self.experts = self.generate_experts(expert_instructions)
 
     def create_expert_instructions(self, num_experts: int, stance: str) -> List[Dict[str, str]]:
-        #coordinator_model = ChatOpenAI(openai_api_key=self.api_key, model_name=self.model_name)
-        coordinator_model = ChatVertexAI(model_name=self.model_name, streaming=True)
+        coordinator_model = ChatGoogleGenerativeAI(model=self.model_name, stream=True, convert_system_message_to_human=True)
         coordinator = Coordinator(coordinator_model, num_experts, self.topic, stance)
         return coordinator.generate_expert_instructions()
 
     def generate_experts(self, experts_instructions: List[Dict[str, str]]) -> List[Expert]:
         experts = []
         for expert_instruction in experts_instructions:
-            #expert_model = ChatOpenAI(openai_api_key=self.api_key, model_name=self.model_name, streaming=True)
-            expert_model = ChatVertexAI(model_name=self.model_name, streaming=True)
+            expert_model = ChatGoogleGenerativeAI(model="gemini-pro", stream=True, convert_system_message_to_human=True)
             experts.append(Expert(expert_model, expert_instruction))
         return experts
     
