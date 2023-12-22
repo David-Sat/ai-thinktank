@@ -18,6 +18,7 @@ def show_spinner(func):
     return wrapper_function
 
 def is_first_load():
+    return False
     if "first_load_done" not in st.session_state:
         st.session_state["first_load_done"] = True
         return True
@@ -81,6 +82,7 @@ def conduct_debate_round():
                 st.session_state.debate.add_message(role=expert.expert_instruction["role"], avatar=default_avatar, content=response)
 
 
+
 st.markdown(
     """
     <style>
@@ -101,6 +103,12 @@ st.markdown(
 )
 
 st.title("AI ThinkTank")
+
+if "submitted" not in st.session_state:
+    st.session_state["submitted"] = False
+
+if "start_debate" not in st.session_state:
+    st.session_state["start_debate"] = False
 
 if 'debate_image_url' in st.session_state and st.session_state['debate_image_url']:
     try:
@@ -139,7 +147,14 @@ stance = "Neutral"
 # Trigger initialization
 submitted = buttonCol.form_submit_button(label="Submit")
 if submitted and topic.strip():
+    st.session_state["submitted"] = True
     initialize_debate()
+    st.session_state["start_debate"] = False
+
+# Conditionally display suggestions based on the 'submitted' state
+if not st.session_state["submitted"]:
+    load_debate_configuration()
+    #display_suggestions()
 
 # Load and display suggestions
 load_debate_configuration()
@@ -148,7 +163,6 @@ if is_first_load():
     default_suggestion = st.session_state["suggestions"][1]
     initialize_debate(start_new=False, debate_history=default_suggestion["debate_history"], expert_instructions=default_suggestion["expert_instructions"])
 
-display_suggestions()
 
 ## Chat interface
 chat = st.container()
@@ -157,24 +171,36 @@ if "debate" in st.session_state:
     for msg in st.session_state.debate.debate_history:
         chat.chat_message(name=msg["role"], avatar=msg["avatar"]).write(msg["content"])
 
-if submitted and topic.strip() != "":
-    st.session_state["debate"].initialize_new_debate(topic=topic, num_experts=number_experts, stance=stance)
-    st.session_state["experts"] = st.session_state["debate"].get_experts()
+if submitted and topic.strip():
+    st.session_state["submitted"] = True
+    initialize_debate()
+    st.session_state["start_debate"] = False
 
-    conduct_debate_round()
 
 if "initialized" in st.session_state and st.session_state["initialized"]:
     expert_expander = form.expander("Generated Experts")
     for expert in st.session_state.experts:
         expert_expander.write(f"{expert.expert_instruction['avatar']} {expert.expert_instruction['role']}, {expert.expert_instruction['stance']}")
-    if input := st.chat_input(placeholder="Participate in the debate"):
-        user_prompt = input.replace("Human: ", "")
-        st.session_state.debate.add_message(role="user", content=user_prompt)
-        chat.chat_message("user").write(user_prompt)
 
-        conduct_debate_round()
+    if not st.session_state["start_debate"]:
+        if st.button("Start Debate"):
+            st.session_state["start_debate"] = True
+            st.session_state["debate"].initialize_new_debate(topic=topic, num_experts=number_experts, stance=stance)
+            st.session_state["experts"] = st.session_state["debate"].get_experts()
+            conduct_debate_round()
 
-    st.button("Continue debate", on_click=conduct_debate_round)
-    #st.write(st.session_state.debate.get_debate_params())
+    if st.session_state["start_debate"]:
+        if input := st.chat_input(placeholder="Participate in the debate"):
+            user_prompt = input.replace("Human: ", "")
+            st.session_state.debate.add_message(role="user", content=user_prompt)
+            chat.chat_message("user").write(user_prompt)
+
+            conduct_debate_round()
+
+        st.button("Continue debate", on_click=conduct_debate_round)
+
+
+
+
 
 
