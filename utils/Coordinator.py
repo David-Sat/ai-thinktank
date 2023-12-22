@@ -3,6 +3,7 @@ from langchain.prompts import ChatPromptTemplate, FewShotChatMessagePromptTempla
 from typing import List, Dict
 from utils.Worker import Worker
 from langchain.schema import StrOutputParser
+from langchain.schema.messages import HumanMessage
 
 
 example_prompt = ChatPromptTemplate.from_messages(
@@ -13,13 +14,21 @@ example_prompt = ChatPromptTemplate.from_messages(
         )
 
 class Coordinator(Worker):
-    def __init__(self, model, num_experts, topic, stance):
+    def __init__(self, model, num_experts, topic=None, stance=None, image_url=None):
         super().__init__(model=model)
         self.num_experts = num_experts
-        self.topic = topic
         self.stance = stance
         self.system_prompts = self.config["coordinator"]['system_prompts']
         self.examples = self.config["coordinator"]['examples']
+
+        # Set topic
+        if image_url:
+            self.topic = self.generate_topic_from_image(image_url)
+        else:
+            self.topic = topic
+
+        if not self.topic:
+            raise ValueError("A topic must be provided or generated from an image URL.")
 
 
     def generate_expert_instructions(self) -> List[Dict]:

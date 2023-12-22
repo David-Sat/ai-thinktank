@@ -9,29 +9,26 @@ class Expert(Worker):
         self.system_prompts = self.config["expert"]['system_prompts']
         self.examples = self.config["expert"]['examples']
     
+    def format_debate_history(self, debate_history: list) -> str:
+        """
+        Formats the debate history into a coherent string.
+        """
+        history_text = ""
+        for entry in debate_history:
+            speaker = entry['role'].capitalize()
+            history_text += f"{speaker}: {entry['content']}\n"
+
+        print(history_text)
+        return history_text
+
     def generate_argument(self, debate: Any, stream_handler: Callable) -> str:
+        # Include the debate history in the human message
+        debate_history_text = self.format_debate_history(debate.debate_history)
+
         system_prompt = self.system_prompts["system1"].replace("##debate_topic##", debate.topic)
-        system_prompt += "\n" + self.expert_instruction["instructions"]
+        system_prompt += "\n" + self.expert_instruction["instructions"] + "\n" + debate_history_text
 
         messages = [HumanMessage(content=system_prompt)]
-
-        last_role = "user"
-        for m in debate.memory:
-            if m.role == "assistant":
-                if last_role == "assistant":
-                    # Insert a user message to maintain alternation
-                    interjection = "What are your thoughts on this?"
-                    messages.append(HumanMessage(content=interjection))
-                messages.append(AIMessage(content=m.content))
-                last_role = "assistant"
-            else:
-                messages.append(HumanMessage(content=m.content))
-                last_role = "user"
-
-        if last_role == "assistant":
-            final_user_input = "What are your thoughts on this?"
-            messages.append(HumanMessage(content=final_user_input))
-
 
         config = {
             "callbacks": [stream_handler]
@@ -39,4 +36,3 @@ class Expert(Worker):
 
         for chunk in self.model.stream(messages, config=config):
             pass
-        

@@ -1,12 +1,21 @@
 import streamlit as st
 from pathlib import Path
 import json
+from PIL import Image
+import requests
+from io import BytesIO
 
 from utils.StreamHandler import StreamHandler
 from utils.Debate import Debate
+from functools import wraps
 
 
-
+def show_spinner(func):
+    @wraps(func)
+    def wrapper_function(*args, **kwargs):
+        with st.spinner('Generating Experts...'):
+            return func(*args, **kwargs)
+    return wrapper_function
 
 def is_first_load():
     if "first_load_done" not in st.session_state:
@@ -24,6 +33,7 @@ def get_api_key():
         st.info("Enter a Google API Key to continue")
         st.stop()
 
+@show_spinner
 def initialize_debate(start_new=True, debate_history=None, expert_instructions=None):
     get_api_key()
     st.session_state["debate"] = Debate(api_key=st.session_state["GOOGLE_API_KEY"], model_name="gemini-pro")
@@ -35,7 +45,12 @@ def initialize_debate(start_new=True, debate_history=None, expert_instructions=N
     else:
         st.session_state.debate.initialize_existing_debate(topic=topic, debate_history=debate_history, expert_instructions=expert_instructions)
 
+    st.session_state["debate_topic"] = st.session_state.debate.topic
+    st.session_state["debate_image_url"] = st.session_state.debate.image_url
+    st.session_state["initialized"] = True
+
     st.session_state["experts"] = st.session_state.debate.get_experts()
+
 
 def load_debate_configuration():
     config_path = Path(__file__).resolve().parent / 'configs' / 'suggestions.json'
@@ -85,8 +100,19 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.title("AI ThinkTank")
 
-st.title("ThinkTankGPT")
+if 'debate_image_url' in st.session_state and st.session_state['debate_image_url']:
+    try:
+        response = requests.get(st.session_state['debate_image_url'])
+        image = Image.open(BytesIO(response.content))
+        st.image(image, caption="Debate Image", use_column_width=True)
+    except Exception as e:
+        st.error(f"Failed to load image from URL. Error: {e}")
+
+if 'debate_topic' in st.session_state and st.session_state['debate_topic']:
+    st.header(st.session_state['debate_topic'])
+
 
 # Settings and form
 form = st.form(key="form_settings")
@@ -119,7 +145,7 @@ if submitted and topic.strip():
 load_debate_configuration()
 
 if is_first_load():
-    default_suggestion = st.session_state["suggestions"][2]
+    default_suggestion = st.session_state["suggestions"][1]
     initialize_debate(start_new=False, debate_history=default_suggestion["debate_history"], expert_instructions=default_suggestion["expert_instructions"])
 
 display_suggestions()

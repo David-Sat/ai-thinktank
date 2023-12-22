@@ -1,0 +1,6 @@
+[theme]
+primaryColor="#3072B3"  # Darker shade of blue for primary elements
+backgroundColor="#E7EFF6"  # Soft blue, less bright than before
+secondaryBackgroundColor="#E6E6FA"  # Lavender for secondary areas
+textColor="#262730"  # Dark gray for readability
+font="sans serif"
